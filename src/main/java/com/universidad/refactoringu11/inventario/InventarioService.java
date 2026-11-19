@@ -1,5 +1,7 @@
 package com.universidad.refactoringu11.inventario;
 
+import com.universidad.refactoringu11.reportes.ReporteBajoStockService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -12,13 +14,19 @@ public class InventarioService {
     private final List<String> movimientos = new ArrayList<>();
     private final CalculadoraReorden calculadoraReorden = new CalculadoraReorden();
 
+    private ReporteBajoStockService reporteBajoStockService;
+
+    @Autowired(required = false)
+    public void setReporteBajoStockService(ReporteBajoStockService reporteBajoStockService) {
+        this.reporteBajoStockService = reporteBajoStockService;
+    }
+
     public void agregarProducto(Producto producto) {
         productos.add(producto);
     }
 
     /**
-     * Actualiza el inventario aplicando métodos de composición (Extract Method / Extract Class).
-     * Orquestación limpia de menos de 10 líneas con responsabilidades delegadas.
+     * Actualiza el inventario aplicando métodos de composición.
      */
     public String actualizarInventario(Long productoId, int cantidad, String tipoMovimiento) {
         if (esEntradaInvalida(productoId, cantidad, tipoMovimiento)) return "ERROR_DATOS_INVALIDOS";
@@ -62,6 +70,9 @@ public class InventarioService {
 
     private String resolverResultadoMovimiento(Producto producto, int nuevoStock, int cantidadReorden) {
         if (cantidadReorden > 0) {
+            if (reporteBajoStockService != null) {
+                System.out.println(reporteBajoStockService.generarReporte());
+            }
             System.out.println("ALERTA: " + producto.getNombre() + " bajo stock minimo. Reordenar " + cantidadReorden + " unidades.");
             return "OK_BAJO_STOCK_REORDEN_" + cantidadReorden;
         }
