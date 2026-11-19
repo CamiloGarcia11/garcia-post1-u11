@@ -1,0 +1,22 @@
+package com.universidad.refactoringu11;
+
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
+
+class ArquitecturaPaquetesTest {
+
+    @Test
+    @DisplayName("Regla Arquitectónica: Los paquetes del sistema deben estar libres de dependencias cíclicas")
+    void losPaquetesNoDebenTenerDependenciasCiclicas() {
+        JavaClasses clases = new ClassFileImporter()
+                .importPackages("com.universidad.refactoringu11");
+
+        slices().matching("com.universidad.refactoringu11.(*)..")
+                .should().beFreeOfCycles()
+                .check(clases);
+    }
+}

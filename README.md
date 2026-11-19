@@ -51,3 +51,38 @@ Todas las pruebas se ejecutaron en verde previo a las intervenciones, permanecie
 | **Responsabilidades en `InventarioService`** | 5 mezcladas | 1 orquestadora delegada |
 | **Switch Statements sobre `TipoProducto`** | 2 duplicados (8 ramas) | **0** (100% polimórfico) |
 | **Pruebas de caracterización** | 12 pruebas ejecutadas | **12 pruebas PASSED** (0 fallos) |
+
+---
+
+## Parte 2: Diagnóstico y Resolución de Acoplamiento entre Paquetes
+
+### 2.1 Diagnóstico de Dependencia Cíclica (ArchUnit en Rojo)
+La adición del módulo de reportes (`ReporteBajoStockService`) introdujo una **dependencia cíclica bidireccional** entre los paquetes `inventario` y `reportes`:
+
+```
+┌───────────────────────────────────────┐
+│     paquete: inventario (Dominio)     │
+│  - InventarioService                  │
+└──────────────────┬────────────────────┘
+                   │  ▲
+                   │  │  Dependencia Cíclica (Violation)
+                   ▼  │
+┌─────────────────────┴─────────────────┐
+│      paquete: reportes (Soporte)      │
+│  - ReporteBajoStockService            │
+└───────────────────────────────────────┘
+```
+
+#### Evidencia de la Falla en ArchUnit:
+Al ejecutar `ArquitecturaPaquetesTest`:
+```text
+[ERROR] Failures: 
+[ERROR]   ArquitecturaPaquetesTest.losPaquetesNoDebenTenerDependenciasCiclicas:18 
+Architecture Violation [Priority: MEDIUM] - Rule 'slices matching 'com.universidad.refactoringu11.(*)..' should be free of cycles' was violated (1 times):
+Cycle detected: Slice inventario -> Slice reportes -> Slice inventario
+  Slice inventario depends on Slice reportes:
+    Field <com.universidad.refactoringu11.inventario.InventarioService.reporteBajoStockService> has type <com.universidad.refactoringu11.reportes.ReporteBajoStockService>
+  Slice reportes depends on Slice inventario:
+    Constructor <com.universidad.refactoringu11.reportes.ReporteBajoStockService.<init>(com.universidad.refactoringu11.inventario.InventarioService)> has parameter of type <com.universidad.refactoringu11.inventario.InventarioService>
+```
+*Las pruebas de negocio continuaban pasando porque la JVM compila clases con dependencias circulares, pero la arquitectura del sistema queda gravemente degradada impidiendo el empaquetado o despliegue independiente de módulos.*
